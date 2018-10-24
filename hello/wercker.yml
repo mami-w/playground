@@ -1,0 +1,48 @@
+# This references a standard debian container from the
+# Docker Hub https://registry.hub.docker.com/_/debian/
+# Read more about containers on our dev center
+# https://devcenter.wercker.com/overview-and-core-concepts/containers/
+box: microsoft/dontnet-2.1-sdk
+no-response-timeout: 10
+# You can also use services such as databases. Read more on our dev center:
+# https://devcenter.wercker.com/administration/services/
+# services:
+    # - postgres
+    # https://devcenter.wercker.com/administration/services/examples/postgresql/
+
+    # - mongo
+    # https://devcenter.wercker.com/administration/services/examples/mongodb/
+
+# This is the build pipeline. Pipelines are the core of wercker
+# Read more about pipelines on our dev center
+# https://devcenter.wercker.com/development/pipelines/
+build:
+    # Steps make up the actions in your pipeline
+    # Read more about steps on our dev center:
+    # https://devcenter.wercker.com/development/steps/
+  steps:
+    - script:
+        name: restore
+        code: |
+          dotnet restore
+    - script:
+        name: build
+        code: |
+          dotnet build
+    - script:
+        name: publish
+        code: |
+            dotnet publish -o publish
+    -script:
+        name: copy binary
+        code: |
+            cp -r .  $WERCKER_OUTPUT_DIR/app
+            cd $WERCKER_OUTPUT_DIR/app
+deploy:
+    steps:
+        - internal/docker-push:
+            username: $username
+            password: $password
+            repository: playground/hello
+            registry: https://registry.hub.docker.com
+            entrypoint: "/pipeline/source/app/docker_entrypoint.sh"
